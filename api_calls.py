@@ -1,3 +1,4 @@
+import streamlit as st
 # api_calls.py
 import os
 import json
@@ -5,7 +6,8 @@ import requests
 from groq import Groq
 
 # --- KNOWLEDGE LAYER 1: LIVE WEB SEARCH VIA PERPLEXITY AI (Working) ---
-def get_company_data(startup_name):
+@st.cache_data
+def get_company_data(startup_name, sector):
     api_key = os.getenv("PERPLEXITY_API_KEY")
     if not api_key:
         return {"error": "Critical: PERPLEXITY_API_KEY environment variable not found."}
@@ -16,11 +18,11 @@ def get_company_data(startup_name):
         "content-type": "application/json",
         "authorization": f"Bearer {api_key}"
     }
-    prompt = f"""
-    Find factual information about the startup "{startup_name}". You must provide your response as a valid JSON object.
-    The JSON object should have the following keys: "name", "description", "foundedYear", "domain", "geo" (an object with "city" and "country"), "metrics" (an object with "employees"), "category" (an object with "sector" and "industry"), "tags" (a list of relevant keywords), and also try to find "founders" (a list of founder names), and "business_model" (a short description).
-    If you cannot find a specific piece of information, use "N/A" as the value. For lists like "founders", if none are found, use an empty list []. Do not add any text or explanation outside of the JSON object.
-    """
+    prompt = f'''
+    Find factual information about the startup "{startup_name}" that operates in the "{sector}" sector. You must provide your response as a valid JSON object.
+    The JSON object should have the following keys: "name", "description", "foundedYear", "domain", "geo" (an object with "city" and "country"), "metrics" (an object with "employees"), "category" (an object with "sector", "sub_sector", and "industry"), "tags" (a list of relevant keywords), "founders" (a list of founder names), "business_model" (a short description), "stage" (e.g., Seed, Series A, etc.), "target_countries" (a list of countries), "revenue_model" (a short description), "funding_history" (a list of funding rounds), and "key_investors" (a list of investor names).
+    If you cannot find a specific piece of information, use "N/A" as the value. For lists, if none are found, use an empty list []. Do not add any text or explanation outside of the JSON object.
+    '''
     payload = {
         "model": "sonar",
         "messages": [
@@ -49,6 +51,7 @@ def get_company_data(startup_name):
 
 
 # --- KNOWLEDGE LAYER 2: DEEP ANALYSIS VIA GROQ (With Polished Prompt) ---
+@st.cache_data
 def generate_qualitative_analysis(company_data):
     api_key = os.getenv("GROQ_API_KEY")
     client = Groq(api_key=api_key)
@@ -58,10 +61,10 @@ def generate_qualitative_analysis(company_data):
     # =================================================================
     # THIS IS THE CORRECTED, POLISHED PROMPT
     # =================================================================
-    user_prompt = f"""
+    user_prompt = f'''
     Based on this data:\n{prompt_context}\n\nGenerate a concise analysis covering the keys: 'products_services', 'market_description', 'traction_analysis', and 'key_highlights'.
     The value for each key should be a simple string, and the value for 'key_highlights' should be a list of strings. Do not use nested dictionaries.
-    """
+    '''
     # =================================================================
 
     try:

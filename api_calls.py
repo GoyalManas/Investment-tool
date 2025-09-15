@@ -20,8 +20,8 @@ def get_company_data(startup_name, sector):
     }
     prompt = f'''
     Find factual information about the startup "{startup_name}" that operates in the "{sector}" sector. You must provide your response as a valid JSON object.
-    The JSON object should have the following keys: "name", "description", "foundedYear", "domain", "geo" (an object with "city" and "country"), "metrics" (an object with "employees"), "category" (an object with "sector", "sub_sector", and "industry"), "tags" (a list of relevant keywords), "founders" (a list of founder names), "business_model" (a short description), "stage" (e.g., Seed, Series A, etc.), "target_countries" (a list of countries), "revenue_model" (a short description), "funding_history" (a list of funding rounds), and "key_investors" (a list of investor names).
-    If you cannot find a specific piece of information, use "N/A" as the value. For lists, if none are found, use an empty list []. Do not add any text or explanation outside of the JSON object.
+    The JSON object should have the following keys: "name", "description", "foundedYear", "domain", "geo" (an object with "address", "city", and "country"), "social_media" (an object with links), "metrics" (an object with "employees"), "category" (an object with "sector", "sub_sector", "industry", and "activity"), "tags" (a list of relevant keywords), "founders" (a list of founder names), "business_model" (a short description), "revenue_model" (a short description), "revenue_stream" (a short description), "stage" (e.g., Seed, Series A, etc.), "target_countries" (a list of countries), "funding_history" (a list of funding rounds), and "key_investors" (a list of investor names).
+    If you cannot find a specific piece of information, use "N/A" as the value. For lists or objects, if none are found, use an empty list [] or empty object {{}}. Do not add any text or explanation outside of the JSON object.
     '''
     payload = {
         "model": "sonar",
@@ -86,3 +86,37 @@ def generate_qualitative_analysis(company_data):
         return json.loads(json_response_string)
     except Exception as e:
         return {"error": f"LLM generation failed with an unexpected error: {e}"}
+
+@st.cache_data
+def generate_investment_thesis(company_data, llm_analysis):
+    api_key = os.getenv("GROQ_API_KEY")
+    client = Groq(api_key=api_key)
+    
+    prompt_context = f"Company Name: {company_data.get('name', 'N/A')}\nDescription: {llm_analysis.get('products_services', 'N/A')}\nMarket: {llm_analysis.get('market_description', 'N/A')}\nTeam: {company_data.get('founders', [])}\nKey Highlights: {llm_analysis.get('key_highlights', [])}"
+
+    system_prompt = "You are a seasoned VC analyst providing a balanced investment thesis. You MUST respond with a valid JSON object and nothing else."
+    
+    user_prompt = f"""
+    Based on this data:\n{prompt_context}\n\nGenerate a 'bull_case' and a 'bear_case' for investing in this company.
+    The value for each key should be a concise paragraph. The response must be a valid JSON object with these two keys.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+            temperature=0.8,
+        )
+        raw_content = response.choices[0].message.content
+        
+        start_index = raw_content.find('{')
+        end_index = raw_content.rfind('}')
+        
+        if start_index != -1 and end_index != -1 and end_index > start_index:
+            json_response_string = raw_content[start_index:end_index+1]
+        else:
+            return {"error": f"Could not find a valid JSON object in the Groq model's response for thesis. Raw response: '{raw_content}'"}
+
+        return json.loads(json_response_string)
+    except Exception as e:
+        return {"error": f"LLM generation failed for thesis with an unexpected error: {e}"}

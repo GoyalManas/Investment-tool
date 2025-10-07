@@ -1,0 +1,104 @@
+{
+  "global_rules": [
+    {
+      "id": "GLOBAL_01",
+      "description": "Sector Fit",
+      "field_to_check": "category.sector",
+      "operator": "contains",
+      "value": "{user_sector_input}",
+      "result_if_true": { "type": "positive", "text": "Sector Fit: Aligns with the target sector." },
+      "result_if_false": { "type": "negative", "text": "Sector Mismatch: Company's sector does not align with the primary target." }
+    },
+    {
+      "id": "GLOBAL_02",
+      "description": "Stage Fit (Team Size)",
+      "field_to_check": "metrics.employees",
+      "operator": "between",
+      "value": [6, 199],
+      "result_if_true": { "type": "positive", "text": "Stage Fit: Team size of ~{value} is within the preferred Seed-to-Series-A range." },
+      "result_if_false": { "type": "negative", "text": "Stage Check: Team size of ~{value} is outside the typical investment range." }
+    },
+    {
+      "id": "GLOBAL_03",
+      "description": "Company Age",
+      "requires_calculation": "age",
+      "field_to_check": "calculated.age",
+      "operator": "between",
+      "value": [2, 10],
+      "result_if_true": { "type": "positive", "text": "Company Age: Founded {value} years ago, which is a reasonable age." },
+      "result_if_false": { "type": "negative", "text": "Company Age: Founded {value} years ago, which is outside the typical 2-10 year range." }
+    },
+    {
+      "id": "GLOBAL_04",
+      "description": "Single Founder Risk",
+      "field_to_check": "founders_analysis.number_of_founders",
+      "operator": "equals",
+      "value": 1,
+      "result_if_true": { "type": "negative", "text": "Founder Risk: The company relies on a single founder, which can be a dependency risk." },
+      "result_if_false": { "type": "positive", "text": "Founder Team: With {value} founders, the company has mitigated single-founder dependency risk." }
+    },
+    {
+      "id": "GLOBAL_05",
+      "description": "Founder Red Flags",
+      "field_to_check": "founders_analysis.red_flags",
+      "operator": "is_empty_or_na",
+      "value": null,
+      "result_if_true": { "type": "positive", "text": "Founder Red Flags: No significant red flags were found for the founders." },
+      "result_if_false": { "type": "negative", "text": "Founder Red Flags: Red flags were identified: {value}" }
+    },
+    {
+      "id": "GLOBAL_06",
+      "description": "Key Investor Presence",
+      "field_to_check": "key_investors",
+      "operator": "is_not_empty",
+      "value": null,
+      "result_if_true": { "type": "positive", "text": "Investors: Backed by key investors." },
+      "result_if_false": { "type": "neutral", "text": "Investors: No key investor information was found. This may be expected for early-stage companies." }
+    },
+    {
+        "id": "GLOBAL_07",
+        "description": "Product Description Clarity",
+        "field_to_check": "description",
+        "operator": "length_gt",
+        "value": 50,
+        "result_if_true": { "type": "positive", "text": "Product/Service: Clear description of the problem and solution." },
+        "result_if_false": { "type": "negative", "text": "Product/Service: Description is not clear or too short." }
+    },
+    {
+      "id": "GLOBAL_08",
+      "description": "Market Size",
+      "field_to_check": "calculated.parsed_market_size",
+      "operator": "gt",
+      "value": 1000000000,
+      "result_if_true": { "type": "positive", "text": "Market Size: The market size of ${value:,.0f} is large enough." },
+      "result_if_false": { "type": "neutral", "text": "Market Size: The market size is not specified or too small." }
+    },
+    {
+      "id": "GLOBAL_09",
+      "description": "Total Funding",
+      "field_to_check": "calculated.parsed_total_funding",
+      "operator": "between",
+      "value": [1000000, 50000000],
+      "result_if_true": { "type": "positive", "text": "Total Funding: The total funding of ${value:,.0f} is within the preferred range." },
+      "result_if_false": { "type": "neutral", "text": "Total Funding: The total funding is not specified or outside the preferred range." }
+    },
+    {
+      "id": "GLOBAL_10",
+      "description": "Glassdoor Rating",
+      "field_to_check": "glassdoor_rating",
+      "operator": "gt",
+      "value": 3.5,
+      "result_if_true": { "type": "positive", "text": "Glassdoor Rating: The Glassdoor rating of {value} is good." },
+      "result_if_false": { "type": "neutral", "text": "Glassdoor Rating: The Glassdoor rating is not specified or low." }
+    },
+    {
+      "id": "GLOBAL_11",
+      "description": "Number of Competitors",
+      "field_to_check": "competitors",
+      "operator": "list_length_between",
+      "value": [1, 10],
+      "result_if_true": { "type": "positive", "text": "Competition: The number of competitors ({value}) is reasonable." },
+      "result_if_false": { "type": "neutral", "text": "Competition: The number of competitors is not specified or too high." }
+    }
+  ]
+}

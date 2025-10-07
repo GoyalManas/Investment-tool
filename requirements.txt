@@ -2,4 +2,6 @@ streamlit
 python-dotenv
 requests
 groq
-fpdf
+reportlab
+certifi
+Pillow

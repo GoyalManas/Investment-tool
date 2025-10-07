@@ -1,0 +1,222 @@
+{
+  "critical_red_flags": [
+    {
+      "id": "CRITICAL_01",
+      "name": "Capital Efficiency Disaster",
+      "description": "Funding-to-Revenue ratio > 10x",
+      "check": "calculated.capital_efficiency_ratio",
+      "operator": "gt",
+      "threshold": 10,
+      "severity": "CRITICAL",
+      "message": " MAJOR RED FLAG: Raised ${total_funding} for only ${revenue} in revenue (${ratio}x). This suggests either very early stage OR poor execution.",
+      "questions_to_ask": [
+        "Why have they burned so much capital for so little revenue?",
+        "What is their monthly burn rate?",
+        "How many months of runway do they have?",
+        "Is this a deeply technical product with long sales cycles?"
+      ]
+    },
+    {
+      "id": "CRITICAL_02",
+      "name": "No Revenue Despite Heavy Funding",
+      "check": "revenue_exists_with_funding",
+      "severity": "CRITICAL",
+      "message": " CRITICAL: Raised ${total_funding} but no revenue disclosed. Either pre-revenue or hiding numbers.",
+      "questions_to_ask": [
+        "Are they pre-revenue or hiding poor metrics?",
+        "What's blocking revenue generation?",
+        "What's the timeline to revenue?"
+      ]
+    },
+    {
+      "id": "CRITICAL_03",
+      "name": "Negative or No Growth",
+      "check": "calculated.revenue_growth_rate",
+      "operator": "lte",
+      "threshold": 0,
+      "severity": "CRITICAL",
+      "message": " CRITICAL: Revenue declining or flat. Major execution problem.",
+      "questions_to_ask": [
+        "Why is revenue not growing?",
+        "What changed in the market?",
+        "Is the product broken?"
+      ]
+    },
+    {
+      "id": "CRITICAL_04",
+      "name": "Customer Concentration Risk",
+      "check": "calculated.top_customer_percentage",
+      "operator": "gt",
+      "threshold": 50,
+      "severity": "HIGH",
+      "message": "⚠️ HIGH RISK: Top customer represents >{percentage}% of revenue. Loss of this customer would be catastrophic.",
+      "questions_to_ask": [
+        "What's the contract length with top customer?",
+        "What's the renewal likelihood?",
+        "Plan to diversify customer base?"
+      ]
+    },
+    {
+      "id": "CRITICAL_05",
+      "name": "Poor Unit Economics",
+      "check": "calculated.ltv_cac_ratio",
+      "operator": "lt",
+      "threshold": 3,
+      "severity": "HIGH",
+      "message": "⚠️ POOR ECONOMICS: LTV:CAC ratio of {ratio}x is below the 3x threshold. Marginal or negative returns on customer acquisition.",
+      "questions_to_ask": [
+        "What's the plan to improve unit economics?",
+        "Are margins improving over time?",
+        "Is this sustainable long-term?"
+      ]
+    },
+    {
+      "id": "CRITICAL_06",
+      "name": "High Burn Multiple",
+      "check": "calculated.burn_multiple",
+      "operator": "gt",
+      "threshold": 3,
+      "severity": "HIGH",
+      "message": "⚠️ INEFFICIENT: Burn multiple of {ratio}x means spending ${ratio} to generate $1 of ARR. Very capital inefficient.",
+      "questions_to_ask": [
+        "Why is burn so high relative to growth?",
+        "When will efficiency improve?",
+        "Can they reach profitability?"
+      ]
+    },
+    {
+      "id": "CRITICAL_07",
+      "name": "Short Runway",
+      "check": "calculated.runway_months",
+      "operator": "lt",
+      "threshold": 12,
+      "severity": "HIGH",
+      "message": "⚠️ URGENT: Only {months} months of runway. Will need funding SOON.",
+      "questions_to_ask": [
+        "What's the fundraising plan?",
+        "Can they extend runway?",
+        "Risk of down round?"
+      ]
+    },
+    {
+      "id": "CRITICAL_08",
+      "name": "Founder Previous Failure",
+      "check": "founders_analysis.previous_failure",
+      "operator": "contains",
+      "keywords": ["bankrupt", "shut down", "failed", "lawsuit"],
+      "severity": "MEDIUM",
+      "message": "⚠️ Founders have previous company failures. Not necessarily bad, but investigate why.",
+      "questions_to_ask": [
+        "What did they learn from failure?",
+        "Why did it fail?",
+        "Have they demonstrated ability to learn and adapt?"
+      ]
+    },
+    {
+      "id": "CRITICAL_09",
+      "name": "High Churn Rate",
+      "check": "calculated.churn_rate",
+      "operator": "gt",
+      "threshold": 5,
+      "severity": "HIGH",
+      "message": "⚠️ HIGH CHURN: >{rate}% monthly churn is very high. Product-market fit issues.",
+      "questions_to_ask": [
+        "Why are customers leaving?",
+        "What's being done to reduce churn?",
+        "Is the product actually needed?"
+      ]
+    },
+    {
+      "id": "CRITICAL_10",
+      "name": "Low Glassdoor + Executive Departures",
+      "check": "culture_red_flags",
+      "severity": "MEDIUM",
+      "message": "⚠️ CULTURE ISSUES: Low Glassdoor rating + executive departures suggests internal problems.",
+      "questions_to_ask": [
+        "What's causing employee dissatisfaction?",
+        "Why are executives leaving?",
+        "Is this a toxic culture?"
+      ]
+    }
+  ],
+  
+  "positive_signals": [
+    {
+      "id": "POSITIVE_01",
+      "name": "Strong Capital Efficiency",
+      "check": "calculated.capital_efficiency_ratio",
+      "operator": "lt",
+      "threshold": 2,
+      "message": "✅ EXCELLENT: Capital efficiency ratio of {ratio}x shows disciplined execution and strong product-market fit."
+    },
+    {
+      "id": "POSITIVE_02",
+      "name": "Healthy Unit Economics",
+      "check": "calculated.ltv_cac_ratio",
+      "operator": "gt",
+      "threshold": 5,
+      "message": "✅ STRONG: LTV:CAC ratio of {ratio}x shows excellent customer economics."
+    },
+    {
+      "id": "POSITIVE_03",
+      "name": "Hypergrowth",
+      "check": "calculated.revenue_growth_rate",
+      "operator": "gt",
+      "threshold": 100,
+      "message": "✅ HYPERGROWTH: {rate}% revenue growth is exceptional."
+    },
+    {
+      "id": "POSITIVE_04",
+      "name": "High Net Dollar Retention",
+      "check": "calculated.net_dollar_retention",
+      "operator": "gt",
+      "threshold": 120,
+      "message": "✅ EXPANSION: {rate}% NDR shows strong land-and-expand motion."
+    },
+    {
+      "id": "POSITIVE_05",
+      "name": "Blue Chip Customers",
+      "check": "top_customers",
+      "contains_any": ["Google", "Microsoft", "Amazon", "Apple", "Meta", "Fortune 500"],
+      "message": "✅ VALIDATION: Blue-chip customers provide strong market validation."
+    },
+    {
+      "id": "POSITIVE_06",
+      "name": "Quick Payback",
+      "check": "calculated.cac_payback_months",
+      "operator": "lt",
+      "threshold": 12,
+      "message": "✅ EFFICIENT: {months} month CAC payback is healthy."
+    },
+    {
+      "id": "POSITIVE_07",
+      "name": "Prior Successful Exit",
+      "check": "founders_analysis.prior_experience",
+      "contains": "exit",
+      "message": "✅ PROVEN: Founder(s) have successfully exited previous companies."
+    }
+  ],
+  
+  "questions_by_stage": {
+    "seed": [
+      "Is there clear founder-problem fit?",
+      "Do they have initial customer traction (even small)?",
+      "Is the market large enough to build a $1B+ company?",
+      "Can they execute with limited resources?"
+    ],
+    "series_a": [
+      "Have they proven product-market fit?",
+      "Are unit economics improving?",
+      "Can they scale GTM efficiently?",
+      "Is there a path to $100M ARR?",
+      "Do they have repeatable sales motion?"
+    ],
+    "series_b_plus": [
+      "Can they maintain growth rate at scale?",
+      "Are they capital efficient?",
+      "Do they have sustainable competitive moat?",
+      "What's the path to profitability?",
+      "Can they expand into adjacent markets?"
+    ]
+  }
+}

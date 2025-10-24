@@ -11,7 +11,8 @@ GET_COMPANY_DATA_SYSTEM_PROMPT = """You are a financial analyst AI. Your task is
 4.  **Be Concise**: Provide direct answers without additional commentary.
 """
 
-GET_COMPANY_PROFILE_PROMPT_TEMPLATE = """
+GET_COMPANY_PROFILE_PROMPT_TEMPLATE = """**CRITICAL:** Your entire response must be a single, valid JSON object. Do not include any text, titles, or markdown before or after the JSON.
+
 Gather profile and business model information for the startup "{startup_name}" in the {sector} sector.
 
 Return the data in a JSON object with the following structure:
@@ -45,7 +46,8 @@ Return the data in a JSON object with the following structure:
 }}
 """
 
-GET_FINANCIALS_PROMPT_TEMPLATE = """
+GET_FINANCIALS_PROMPT_TEMPLATE = """**CRITICAL:** Your entire response must be a single, valid JSON object. Do not include any text, titles, or markdown before or after the JSON.
+
 Gather specific financial data for the startup "{startup_name}". This data is often private, but search diligently for any public announcements, funding rounds, or news articles that may disclose it.
 
 Return the data in a JSON object with the following structure:
@@ -58,11 +60,14 @@ Return the data in a JSON object with the following structure:
     "key_investors": [
         "Investor 1",
         "Investor 2"
-    ]
+    ],
+    "stage": "e.g., Seed, Series A, Growth",
+    "aggregate_founder_shareholding": "e.g., 40%"
 }}
 """
 
-GET_MARKET_COMPETITION_PROMPT_TEMPLATE = """
+GET_MARKET_COMPETITION_PROMPT_TEMPLATE = """**CRITICAL:** Your entire response must be a single, valid JSON object. Do not include any text, titles, or markdown before or after the JSON.
+
 Analyze the market and competition for the startup "{startup_name}".
 
 Return the data in a JSON object with the following structure:
@@ -86,13 +91,15 @@ Return the data in a JSON object with the following structure:
 }}
 """
 
-GET_TEAM_CULTURE_PROMPT_TEMPLATE = """
+GET_TEAM_CULTURE_PROMPT_TEMPLATE = """**CRITICAL:** Your entire response must be a single, valid JSON object. Do not include any text, titles, or markdown before or after the JSON.
+
 Analyze the team and culture of the startup "{startup_name}".
 
 Return the data in a JSON object with the following structure:
 {{
     "founders_analysis": {{
         "names_of_founders": ["Founder 1", "Founder 2"],
+        "number_of_founders": 2,
         "complementarity": "Do the founders have complementary skills?",
         "key_competency": "What is the core competency of the founding team?",
         "prior_startup_experience": "e.g., First-time founders, one previous exit.",
@@ -114,9 +121,11 @@ QUALITATIVE_ANALYSIS_SYSTEM_PROMPT = """You are an experienced venture capital a
 
 Be critical and analytical. Point out concerns as readily as positives.
 Base all analysis on the provided data - do not make assumptions.
+Avoid making overly confident statements without strong evidence.
 Return analysis in valid JSON format."""
 
-QUALITATIVE_ANALYSIS_USER_PROMPT_TEMPLATE = """
+QUALITATIVE_ANALYSIS_USER_PROMPT_TEMPLATE = """**CRITICAL:** Your entire response must be a single, valid JSON object. Do not include any text, titles, or markdown before or after the JSON.
+
 Analyze this company data and provide strategic insights:
 
 {prompt_context}
@@ -142,7 +151,8 @@ Be brutally honest. If data suggests problems, say so clearly.
 Focus on metrics and evidence, not marketing language.
 Return in valid JSON format."""
 
-INVESTMENT_THESIS_USER_PROMPT_TEMPLATE = """
+INVESTMENT_THESIS_USER_PROMPT_TEMPLATE = """**CRITICAL:** Your entire response must be a single, valid JSON object. Do not include any text, titles, or markdown before or after the JSON.
+
 Based on this company analysis, provide an investment thesis:
 
 {prompt_context}

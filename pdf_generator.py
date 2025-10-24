@@ -21,34 +21,62 @@ class PDFReport:
                                      leftMargin=0.75*inch, rightMargin=0.75*inch,
                                      topMargin=0.75*inch, bottomMargin=0.75*inch)
         self.styles = getSampleStyleSheet()
-        self.styles.add(ParagraphStyle(name='KeyStyle', fontName='Helvetica-Bold', fontSize=10, leading=12))
-        self.styles.add(ParagraphStyle(name='ValueStyle', fontName='Helvetica', fontSize=10, leading=12))
-        self.styles.add(ParagraphStyle(name='BulletStyle', fontName='Helvetica', fontSize=10, leading=12, leftIndent=18))
+        
+        # Modify Title style
+        self.styles['Title'].fontName = 'Helvetica-Bold'
+        self.styles['Title'].fontSize = 24
+        self.styles['Title'].leading = 28
+        self.styles['Title'].textColor = navy
+        self.styles['Title'].alignment = TA_CENTER
+
+        # Modify Heading2 for MainSection
+        self.styles['h2'].fontName = 'Helvetica-Bold'
+        self.styles['h2'].fontSize = 16
+        self.styles['h2'].leading = 20
+        self.styles['h2'].textColor = navy
+
+        # Modify Heading3 for SubSection
+        self.styles['h3'].fontName = 'Helvetica-Bold'
+        self.styles['h3'].fontSize = 12
+        self.styles['h3'].leading = 16
+        self.styles['h3'].textColor = navy
+
+        # Modify BodyText
+        self.styles['BodyText'].fontName = 'Helvetica'
+        self.styles['BodyText'].fontSize = 10
+        self.styles['BodyText'].leading = 14
+
+        # Modify Bullet
+        self.styles['Bullet'].fontName = 'Helvetica'
+        self.styles['Bullet'].fontSize = 10
+        self.styles['Bullet'].leading = 14
+        self.styles['Bullet'].leftIndent = 18
+
+        # Add Key and Value styles
+        self.styles.add(ParagraphStyle(name='Key', fontName='Helvetica-Bold', fontSize=10, leading=12))
+        self.styles.add(ParagraphStyle(name='Value', fontName='Helvetica', fontSize=10, leading=12))
 
     def _add_header(self, company_name):
-        style = self.styles['h1']
-        style.textColor = navy
-        style.alignment = TA_CENTER
-        self.story.append(Paragraph(f"Investment Memo: {company_name}", style))
+        # Add logo placeholder
+        self.story.append(Paragraph("Your Logo Here", self.styles['Normal']))
+        self.story.append(Spacer(1, 0.2*inch))
+        
+        self.story.append(Paragraph(f"Investment Memo: {company_name}", self.styles['Title']))
         self.story.append(Spacer(1, 0.2*inch))
 
     def _add_section(self, title, content=None, is_sub_section=False):
         self.story.append(Spacer(1, 0.15*inch))
         if is_sub_section:
-            title_style = self.styles['h3']
-            title_style.textColor = navy
-            self.story.append(Paragraph(title, title_style))
+            self.story.append(Paragraph(title, self.styles['h3']))
         else:
-            title_style = self.styles['h2']
-            title_style.textColor = navy
-            self.story.append(Paragraph(title, title_style))
+            self.story.append(Paragraph(title, self.styles['h2']))
             self.story.append(Line(7*inch)) # Horizontal line for main sections
         self.story.append(Spacer(1, 0.1*inch))
 
         if content:
             if isinstance(content, list):
                 for item in content:
-                    self.story.append(Paragraph(f"• {item}", self.styles['BulletStyle']))
+                    self.story.append(Paragraph(f"• {item}", self.styles['Bullet']))
                     self.story.append(Spacer(1, 0.05*inch))
             elif isinstance(content, str):
                 self.story.append(Paragraph(content, self.styles['BodyText']))
@@ -61,7 +89,7 @@ class PDFReport:
                     # Handle links
                     if value.startswith('http'):
                         value = f"<link href='{value}'>{value}</link>"
-                    table_data.append([Paragraph(f"<b>{key}:</b>", self.styles['KeyStyle']), Paragraph(value, self.styles['ValueStyle'])])
+                    table_data.append([Paragraph(f"<b>{key}:</b>", self.styles['Key']), Paragraph(value, self.styles['Value'])])
                 
                 if table_data:
                     table = Table(table_data, colWidths=[2*inch, 5*inch])
@@ -78,9 +106,9 @@ class PDFReport:
     def _create_scorecard_table(self, rules_feedback):
         data = [
             [
-                Paragraph("<b>Criteria</b>", self.styles['KeyStyle']), 
-                Paragraph("<b>Result</b>", self.styles['KeyStyle']), 
-                Paragraph("<b>Comment</b>", self.styles['KeyStyle'])
+                Paragraph("<b>Criteria</b>", self.styles['Key']), 
+                Paragraph("<b>Result</b>", self.styles['Key']), 
+                Paragraph("<b>Comment</b>", self.styles['Key'])
             ]
         ]
         for item in rules_feedback:
@@ -88,9 +116,9 @@ class PDFReport:
             comment = ':'.join(item['text'].split(':')[1:]).strip()
             result = item['type'].upper()
             data.append([
-                Paragraph(criteria, self.styles['ValueStyle']), 
-                Paragraph(result, self.styles['ValueStyle']), 
-                Paragraph(comment, self.styles['ValueStyle'])
+                Paragraph(criteria, self.styles['Value']), 
+                Paragraph(result, self.styles['Value']), 
+                Paragraph(comment, self.styles['Value'])
             ])
 
         table = Table(data, colWidths=[1.75*inch, 0.75*inch, 4.5*inch])
@@ -135,38 +163,88 @@ class PDFReport:
             if highlights:
                 self._add_section("Key Highlights", highlights, is_sub_section=True)
 
+    def _add_founder_analysis(self, founders_analysis):
+        if founders_analysis and not founders_analysis.get('error'):
+            self.story.append(PageBreak())
+            self._add_section("Founder Analysis")
+            for key, value in founders_analysis.items():
+                self._add_section(key.replace('_', ' ').title(), value, is_sub_section=True)
+
+    def _add_product_analysis(self, product_analysis):
+        if product_analysis and not product_analysis.get('error'):
+            self.story.append(PageBreak())
+            self._add_section("Product Analysis")
+            for key, value in product_analysis.items():
+                self._add_section(key.replace('_', ' ').title(), value, is_sub_section=True)
+
     def _add_company_details(self, company_data):
-        self.story.append(PageBreak())
         self._add_section("Company Overview")
 
-        # Company Details
+        # Left column content
+        left_column = []
         geo = company_data.get('geo', {})
         domain = company_data.get('domain', 'N/A')
         website_url = f"https://{domain}" if domain != 'N/A' else '#'
-        company_details_data = {
-            "Year Founded": company_data.get('foundedYear', 'N/A'),
-            "HQ Location": f"{geo.get('city', 'N/A')}, {geo.get('country', 'N/A')}",
-            "Website": website_url,
-            "Team Strength": f"{company_data.get('metrics', {}).get('employees', 'N/A')} employees",
-        }
-        self._add_section("Company Details", company_details_data, is_sub_section=True)
+        
+        left_column.append(Paragraph("<b>Company Details</b>", self.styles['h3']))
+        left_column.append(Spacer(1, 0.1*inch))
+        company_details_data = [
+            [Paragraph("<b>Year Founded:</b>", self.styles['Key']), Paragraph(str(company_data.get('foundedYear', 'N/A')), self.styles['Value'])],
+            [Paragraph("<b>HQ Location:</b>", self.styles['Key']), Paragraph(f"{geo.get('city', 'N/A')}, {geo.get('country', 'N/A')}", self.styles['Value'])],
+            [Paragraph("<b>Website:</b>", self.styles['Key']), Paragraph(f"<link href='{website_url}'>{domain}</link>", self.styles['Value'])],
+            [Paragraph("<b>Team Strength:</b>", self.styles['Key']), Paragraph(f"{company_data.get('metrics', {}).get('employees', 'N/A')} employees", self.styles['Value'])],
+        ]
+        table = Table(company_details_data, colWidths=[1.5*inch, 2*inch])
+        table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+        ]))
+        left_column.append(table)
 
-        # Founders
+
+        left_column.append(Spacer(1, 0.2*inch))
+        
         founders_analysis = company_data.get('founders_analysis', {})
         if founders_analysis and founders_analysis.get('names_of_founders'):
-            founders_content = {
-                "Founder(s)": ', '.join(founders_analysis.get('names_of_founders', [])),
-                "Complementarity": founders_analysis.get('complementarity', 'N/A'),
-                "Key Competency": founders_analysis.get('key_competency', 'N/A'),
-                "Prior Experience": founders_analysis.get('prior_startup_experience', 'N/A'),
-                "Red Flags": founders_analysis.get('red_flags', 'N/A'),
-            }
-            self._add_section("Founders", founders_content, is_sub_section=True)
+            left_column.append(Paragraph("<b>Founders</b>", self.styles['h3']))
+            left_column.append(Spacer(1, 0.1*inch))
+            founders_content = [
+                [Paragraph("<b>Founder(s):</b>", self.styles['Key']), Paragraph(', '.join(founders_analysis.get('names_of_founders', [])), self.styles['Value'])],
+                [Paragraph("<b>Complementarity:</b>", self.styles['Key']), Paragraph(founders_analysis.get('complementarity', 'N/A'), self.styles['Value'])],
+                [Paragraph("<b>Key Competency:</b>", self.styles['Key']), Paragraph(founders_analysis.get('key_competency', 'N/A'), self.styles['Value'])],
+                [Paragraph("<b>Prior Experience:</b>", self.styles['Key']), Paragraph(founders_analysis.get('prior_startup_experience', 'N/A'), self.styles['Value'])],
+                [Paragraph("<b>Red Flags:</b>", self.styles['Key']), Paragraph(founders_analysis.get('red_flags', 'N/A'), self.styles['Value'])],
+            ]
+            table = Table(founders_content, colWidths=[1.5*inch, 2*inch])
+            table.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+                ('TOPPADDING', (0,0), (-1,-1), 2),
+            ]))
+            left_column.append(table)
 
-        # Key Investors
+        # Right column content
+        right_column = []
         key_investors = company_data.get('key_investors', [])
         if key_investors:
-            self._add_section("Key Investors", key_investors, is_sub_section=True)
+            right_column.append(Paragraph("<b>Key Investors</b>", self.styles['h3']))
+            right_column.append(Spacer(1, 0.1*inch))
+            for investor in key_investors:
+                right_column.append(Paragraph(f"• {investor}", self.styles['Bullet']))
+                right_column.append(Spacer(1, 0.05*inch))
+
+        # Create table with two columns
+        table_data = [[left_column, right_column]]
+        table = Table(table_data, colWidths=[4*inch, 3*inch])
+        table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ]))
+        self.story.append(table)
 
     def _add_business_details(self, company_data):
         # Sector & Activity
@@ -189,54 +267,85 @@ class PDFReport:
         self._add_section("Business & Revenue", business_revenue_data, is_sub_section=True)
 
     def _add_financial_details(self, company_data):
-        financials_data = {
-            "Total Funding": company_data.get('total_funding', 'N/A'),
-            "Last Funding Round": company_data.get('last_funding_round', 'N/A'),
-            "Valuation": company_data.get('valuation', 'N/A'),
-            "Revenue": company_data.get('revenue', 'N/A'),
-            "Profitability": company_data.get('profitability', 'N/A'),
-        }
-        self._add_section("Financials", financials_data, is_sub_section=True)
+        self._add_section("Financials", is_sub_section=True)
+        financials_data = [
+            [Paragraph("<b>Total Funding:</b>", self.styles['Key']), Paragraph(company_data.get('total_funding', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Last Funding Round:</b>", self.styles['Key']), Paragraph(company_data.get('last_funding_round', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Valuation:</b>", self.styles['Key']), Paragraph(company_data.get('valuation', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Revenue:</b>", self.styles['Key']), Paragraph(company_data.get('revenue', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Profitability:</b>", self.styles['Key']), Paragraph(company_data.get('profitability', 'N/A'), self.styles['Value'])],
+        ]
+        table = Table(financials_data, colWidths=[2*inch, 5*inch])
+        table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+        ]))
+        self.story.append(table)
 
     def _add_market_and_product_details(self, company_data):
-        # Market & Competition
-        market_competition_data = {
-            "Market Size": company_data.get('market_size', 'N/A'),
-            "Market Growth Rate": company_data.get('market_growth_rate', 'N/A'),
-            "Competitive Advantage": company_data.get('competitive_advantage', 'N/A'),
-            "Competitors": ", ".join(company_data.get('competitors', []) if company_data.get('competitors') else ['N/A']),
-        }
-        self._add_section("Market & Competition", market_competition_data, is_sub_section=True)
+        self._add_section("Market & Competition", is_sub_section=True)
+        market_competition_data = [
+            [Paragraph("<b>Market Size:</b>", self.styles['Key']), Paragraph(company_data.get('market_size', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Market Growth Rate:</b>", self.styles['Key']), Paragraph(company_data.get('market_growth_rate', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Competitive Advantage:</b>", self.styles['Key']), Paragraph(company_data.get('competitive_advantage', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Competitors:</b>", self.styles['Key']), Paragraph(", ".join(company_data.get('competitors', []) if company_data.get('competitors') else ['N/A']), self.styles['Value'])],
+        ]
+        table = Table(market_competition_data, colWidths=[2*inch, 5*inch])
+        table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+        ]))
+        self.story.append(table)
 
-        # Product & Technology
-        product_technology_data = {
-            "Product Differentiation": company_data.get('product_differentiation', 'N/A'),
-            "Innovative Solution": company_data.get('innovative_solution', 'N/A'),
-            "Patents": ", ".join(company_data.get('patents', []) if company_data.get('patents') else ['N/A']),
-            "Product Validation": company_data.get('product_validation', 'N/A'),
-            "Technology Stack": company_data.get('technology_stack', 'N/A'),
-            "Product Roadmap": company_data.get('product_roadmap', 'N/A'),
-        }
-        self._add_section("Product & Technology", product_technology_data, is_sub_section=True)
+        self._add_section("Product & Technology", is_sub_section=True)
+        product_technology_data = [
+            [Paragraph("<b>Product Differentiation:</b>", self.styles['Key']), Paragraph(company_data.get('product_differentiation', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Innovative Solution:</b>", self.styles['Key']), Paragraph(company_data.get('innovative_solution', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Patents:</b>", self.styles['Key']), Paragraph(", ".join(company_data.get('patents', []) if company_data.get('patents') else ['N/A']), self.styles['Value'])],
+            [Paragraph("<b>Product Validation:</b>", self.styles['Key']), Paragraph(company_data.get('product_validation', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Technology Stack:</b>", self.styles['Key']), Paragraph(company_data.get('technology_stack', 'N/A'), self.styles['Value'])],
+            [Paragraph("<b>Product Roadmap:</b>", self.styles['Key']), Paragraph(company_data.get('product_roadmap', 'N/A'), self.styles['Value'])],
+        ]
+        table = Table(product_technology_data, colWidths=[2*inch, 5*inch])
+        table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+        ]))
+        self.story.append(table)
 
-    def generate(self, startup_name, company_data, llm_analysis, rules_feedback, investment_thesis):
+    def generate(self, startup_name, company_data, llm_analysis, rules_feedback, investment_thesis, founders_analysis, product_analysis):
         self.story = []
         self._add_header(company_data.get('name', startup_name))
 
-        # Page 1: Thesis and Scorecard
-        self._add_investment_thesis(investment_thesis)
-        if rules_feedback:
-            self._add_section("Investment Fit Scorecard")
-            self._create_scorecard_table(rules_feedback)
-
-        # Page 2: AI Analysis
-        self._add_llm_analysis(llm_analysis)
-
-        # Page 3: Company Details
+        # Page 1: Company Overview
         self._add_company_details(company_data)
         self._add_business_details(company_data)
         self._add_financial_details(company_data)
         self._add_market_and_product_details(company_data)
+
+        # Page 2: Founder Analysis
+        self._add_founder_analysis(founders_analysis)
+
+        # Page 3: Product Analysis
+        self._add_product_analysis(product_analysis)
+
+        # Page 4: AI Analysis
+        self._add_llm_analysis(llm_analysis)
+
+        # Page 5: Investment Thesis and Scorecard
+        self._add_investment_thesis(investment_thesis)
+        if rules_feedback:
+            self._add_section("Investment Fit Scorecard")
+            self._create_scorecard_table(rules_feedback)
 
         # Build the PDF
         self.doc.build(self.story)

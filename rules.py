@@ -82,6 +82,28 @@ def apply_investment_rules(company_data, user_sector_input):
         operator = rule['operator']
         rule_value = rule['value']
 
+        # --- Condition Logic ---
+        condition_met = True
+        if "condition" in rule:
+            condition = rule["condition"]
+            condition_field = condition["field"]
+            condition_operator = condition["operator"]
+            condition_value = condition["value"]
+            
+            actual_condition_value = _get_nested_value(company_data, condition_field)
+            
+            if actual_condition_value is None:
+                condition_met = False
+            
+            if condition_operator == "contains_any":
+                if isinstance(actual_condition_value, str) and isinstance(condition_value, list):
+                    condition_met = any(val.lower() in actual_condition_value.lower() for val in condition_value)
+                else:
+                    condition_met = False
+        
+        if not condition_met:
+            continue
+
         # Get the actual value from company_data
         if field.startswith('calculated.'):
             actual_value = calculated_values.get(field.split('.')[1])
@@ -120,6 +142,14 @@ def apply_investment_rules(company_data, user_sector_input):
         elif operator == 'gt':
             if isinstance(actual_value, (int, float)):
                 result = actual_value > rule_value
+
+        elif operator == 'le':
+            if isinstance(actual_value, (int, float)):
+                result = actual_value <= rule_value
+
+        elif operator == 'lt':
+            if isinstance(actual_value, (int, float)):
+                result = actual_value < rule_value
         
         elif operator == 'list_length_between':
             if isinstance(actual_value, list) and len(rule_value) == 2:

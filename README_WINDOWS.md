@@ -12,13 +12,48 @@ This project is a Streamlit web application that generates a preliminary investm
 
 ## How to Use (Windows)
 
-1.  **Clone the repository:**
+0.  **Install Python:**
+    This project requires Python 3.8 or newer. If you don't have Python installed, or if you have an older version, follow these steps:
+
+    1.  **Download Python:** Go to the official Python website: [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)
+    2.  **Run the Installer:** Download the latest stable version for Windows (e.g., "Windows installer (64-bit)").
+    3.  **Important:** During installation, make sure to check the box that says "**Add Python X.Y to PATH**" (where X.Y is the version number). This will allow you to run Python commands from any terminal.
+    4.  **Verify Installation:** Open a new Command Prompt or PowerShell window and type:
+        ```bash
+        python --version
+        ```
+        You should see the installed Python version.
+
+1.  **Install Git (if not already installed):**
+    Git is essential for cloning the repository. You can install it using Winget (Windows Package Manager), which is often pre-installed on modern Windows versions.
+
+    1.  **Open PowerShell as Administrator:**
+        *   Search for "PowerShell" in the Start Menu.
+        *   Right-click on "Windows PowerShell" and select "Run as administrator."
+
+    2.  **Install Git:**
+        *   In the Administrator PowerShell window, type the following command and press Enter:
+            ```powershell
+            winget install Git.Git
+            ```
+        *   If `winget` is not recognized, install it from the Microsoft Store by searching for "App Installer" or visiting [https://aka.ms/getwinget](https://aka.ms/getwinget).
+        *   Follow any prompts to accept agreements.
+
+    3.  **Verify Installation:**
+        *   After installation, **close and reopen** your PowerShell or Command Prompt window.
+        *   Then, type:
+            ```bash
+            git --version
+            ```
+            You should see the installed Git version.
+
+2.  **Clone the repository:**
     ```bash
     git clone <your-repository-url>
     cd investment-tool
     ```
 
-2.  **Create a virtual environment and install dependencies:**
+3.  **Create a virtual environment and install dependencies:**
     Open the Windows Command Prompt (`cmd`) or PowerShell and run the following commands.
     ```powershell
     # Create the virtual environment folder named 'venv'
@@ -31,17 +66,17 @@ This project is a Streamlit web application that generates a preliminary investm
     pip install -r requirements.txt
     ```
 
-3.  **Set up your API keys:**
+4.  **Set up your API keys:**
     - Rename the `.env.example` file to `.env`.
     - Open the `.env` file and add your API keys for Perplexity AI and Groq.
 
-4.  **Run the Streamlit application:**
+5.  **Run the Streamlit application:**
     With your virtual environment still active, run:
     ```powershell
     streamlit run app.py
     ```
 
-5.  **Generate a report:**
+6.  **Generate a report:**
     - Open your web browser and go to the URL provided by Streamlit (usually `http://localhost:8501`).
     - Enter the name of the startup and the target sector in the sidebar.
     - Click the "Generate Report" button.

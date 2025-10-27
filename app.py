@@ -3,7 +3,7 @@ import streamlit as st
 import os
 import json
 from dotenv import load_dotenv
-from api_calls import get_company_data, generate_qualitative_analysis, generate_investment_thesis
+from api_calls import get_company_data, generate_qualitative_analysis, generate_investment_thesis, generate_founders_analysis, generate_product_analysis
 from rules import apply_investment_rules
 from pdf_generator import PDFReport
 
@@ -14,6 +14,8 @@ def display_report_ui(report_data):
     company_data = report_data.get('company_data', {})
     llm_analysis = report_data.get('llm_analysis', {})
     investment_thesis = report_data.get('investment_thesis', {})
+    founders_analysis = report_data.get('founders_analysis', {})
+    product_analysis = report_data.get('product_analysis', {})
     rules_feedback = report_data.get('rules_feedback', [])
     startup_name = report_data.get('startup_name', 'N/A')
 
@@ -45,15 +47,11 @@ def display_report_ui(report_data):
             st.markdown("N/A")
 
         st.subheader("Founders")
-        founders_analysis = company_data.get('founders_analysis', {})
-        if founders_analysis and founders_analysis.get('names_of_founders'):
-            st.markdown(f"**Founder(s):** {', '.join(founders_analysis.get('names_of_founders', []))}")
-            st.markdown(f"**Complementarity:** {founders_analysis.get('complementarity', 'N/A')}")
-            st.markdown(f"**Key Competency:** {founders_analysis.get('key_competency', 'N/A')}")
-            st.markdown(f"**Prior Experience:** {founders_analysis.get('prior_startup_experience', 'N/A')}")
-            st.markdown(f"**Red Flags:** {founders_analysis.get('red_flags', 'N/A')}")
-        else:
-            st.markdown("N/A")
+        st.markdown(f"**Founder(s):** {', '.join(company_data.get('founders_analysis', {}).get('names_of_founders', []))}")
+        st.markdown(f"**Complementarity:** {company_data.get('founders_analysis', {}).get('complementarity', 'N/A')}")
+        st.markdown(f"**Key Competency:** {company_data.get('founders_analysis', {}).get('key_competency', 'N/A')}")
+        st.markdown(f"**Prior Experience:** {company_data.get('founders_analysis', {}).get('prior_startup_experience', 'N/A')}")
+        st.markdown(f"**Red Flags:** {company_data.get('founders_analysis', {}).get('red_flags', 'N/A')}")
 
         st.subheader("Key Investors")
         key_investors = company_data.get('key_investors', [])
@@ -120,6 +118,16 @@ def display_report_ui(report_data):
         else:
             st.markdown("N/A")
 
+    st.subheader("Founder Analysis")
+    if founders_analysis and not founders_analysis.get('error'):
+        for key, value in founders_analysis.items():
+            st.info(f"**{key.replace('_', ' ').title()}:** {value}")
+
+    st.subheader("Product Analysis")
+    if product_analysis and not product_analysis.get('error'):
+        for key, value in product_analysis.items():
+            st.info(f"**{key.replace('_', ' ').title()}:** {value}")
+
     st.subheader("Investment Thesis")
     if investment_thesis and not investment_thesis.get('error'):
         st.success(f"**Investment Summary:** {investment_thesis.get('investment_summary', 'N/A')}")
@@ -138,7 +146,7 @@ def display_report_ui(report_data):
 
     st.subheader("Download Report")
     pdf = PDFReport()
-    pdf_output = pdf.generate(startup_name, company_data, llm_analysis, rules_feedback, investment_thesis)
+    pdf_output = pdf.generate(startup_name, company_data, llm_analysis, rules_feedback, investment_thesis, founders_analysis, product_analysis)
     st.download_button(
         label="Download as PDF",
         data=pdf_output,
@@ -146,7 +154,7 @@ def display_report_ui(report_data):
         mime="application/pdf"
     )
     
-    markdown_report_string = generate_markdown_report(startup_name, company_data, llm_analysis, rules_feedback, investment_thesis)
+    markdown_report_string = generate_markdown_report(startup_name, company_data, llm_analysis, rules_feedback, investment_thesis, founders_analysis, product_analysis)
     st.download_button(
         label="Download as Markdown (.md)",
         data=markdown_report_string,
@@ -155,7 +163,7 @@ def display_report_ui(report_data):
     )
 
 # --- The Markdown generation function ---
-def generate_markdown_report(startup_name, company_data, llm_analysis, rules_feedback, investment_thesis):
+def generate_markdown_report(startup_name, company_data, llm_analysis, rules_feedback, investment_thesis, founders_analysis, product_analysis):
     name = company_data.get('name', startup_name)
     geo = company_data.get('geo', {})
     category = company_data.get('category', {})
@@ -186,15 +194,11 @@ def generate_markdown_report(startup_name, company_data, llm_analysis, rules_fee
     report += '''
 ## Founders
 '''
-    founders_analysis = company_data.get('founders_analysis', {})
-    if founders_analysis and founders_analysis.get('names_of_founders'):
-        report += f"**Founder(s):** {', '.join(founders_analysis.get('names_of_founders', []))}\n"
-        report += f"**Complementarity:** {founders_analysis.get('complementarity', 'N/A')}\n"
-        report += f"**Key Competency:** {founders_analysis.get('key_competency', 'N/A')}\n"
-        report += f"**Prior Experience:** {founders_analysis.get('prior_startup_experience', 'N/A')}\n"
-        report += f"**Red Flags:** {founders_analysis.get('red_flags', 'N/A')}\n"
-    else:
-        report += "- N/A\n"
+    report += f"**Founder(s):** {', '.join(company_data.get('founders_analysis', {}).get('names_of_founders', []))}\n"
+    report += f"**Complementarity:** {company_data.get('founders_analysis', {}).get('complementarity', 'N/A')}\n"
+    report += f"**Key Competency:** {company_data.get('founders_analysis', {}).get('key_competency', 'N/A')}\n"
+    report += f"**Prior Experience:** {company_data.get('founders_analysis', {}).get('prior_startup_experience', 'N/A')}\n"
+    report += f"**Red Flags:** {company_data.get('founders_analysis', {}).get('red_flags', 'N/A')}\n"
 
     report += '''
 ## Key Investors
@@ -271,6 +275,24 @@ def generate_markdown_report(startup_name, company_data, llm_analysis, rules_fee
     else:
         report += "- N/A\n"
 
+    report += '''
+---
+
+## Founder Analysis
+'''
+    if founders_analysis and not founders_analysis.get('error'):
+        for key, value in founders_analysis.items():
+            report += f"### {key.replace('_', ' ').title()}\n{value}\n\n"
+
+    report += '''
+---
+
+## Product Analysis
+'''
+    if product_analysis and not product_analysis.get('error'):
+        for key, value in product_analysis.items():
+            report += f"### {key.replace('_', ' ').title()}\n{value}\n\n"
+
     report += f'''
 ---
 
@@ -312,7 +334,7 @@ if 'debug_mode' not in st.session_state:
 
 st.sidebar.header("Inputs")
 startup_name_input = st.sidebar.text_input("Startup Name", placeholder="e.g., Cred, Figma, Stripe")
-sector_input = st.sidebar.text_input("Target Sector", value="FinTech")
+sector_input = st.sidebar.text_input("Target Sector", placeholder="e.g., Healthtech, Crypto")
 debug_mode = st.sidebar.checkbox("Enable Debug Mode", value=st.session_state.debug_mode)
 
 
@@ -325,6 +347,8 @@ if st.sidebar.button("Generate Report", type="primary"):
         company_data = {}
         llm_analysis = {}
         investment_thesis = {}
+        founders_analysis = {}
+        product_analysis = {}
         rules_feedback = []
 
         with st.spinner("Layer 1: Gathering data from Perplexity..."):
@@ -343,6 +367,16 @@ if st.sidebar.button("Generate Report", type="primary"):
                 if investment_thesis.get("error"):
                     st.error(f"Layer 3 (Groq) Error: {investment_thesis['error']}")
 
+            with st.spinner("ðŸ§  Layer 4: Analyzing founders..."):
+                founders_analysis = generate_founders_analysis(company_data)
+                if founders_analysis.get("error"):
+                    st.error(f"Layer 4 (Groq) Error: {founders_analysis['error']}")
+
+            with st.spinner("ðŸ’¡ Layer 5: Analyzing product..."):
+                product_analysis = generate_product_analysis(company_data)
+                if product_analysis.get("error"):
+                    st.error(f"Layer 5 (Groq) Error: {product_analysis['error']}")
+
             with st.spinner("âœ… Applying investment rules..."):
                 rules_feedback = apply_investment_rules(company_data, sector_input)
         
@@ -350,6 +384,8 @@ if st.sidebar.button("Generate Report", type="primary"):
             'company_data': company_data,
             'llm_analysis': llm_analysis,
             'investment_thesis': investment_thesis,
+            'founders_analysis': founders_analysis,
+            'product_analysis': product_analysis,
             'rules_feedback': rules_feedback,
             'startup_name': startup_name_input
         }
@@ -362,6 +398,10 @@ if st.sidebar.button("Generate Report", type="primary"):
             print(json.dumps(llm_analysis, indent=2))
             print("\n--- RAW GROQ THESIS RESPONSE ---")
             print(json.dumps(investment_thesis, indent=2))
+            print("\n--- RAW FOUNDERS ANALYSIS RESPONSE ---")
+            print(json.dumps(founders_analysis, indent=2))
+            print("\n--- RAW PRODUCT ANALYSIS RESPONSE ---")
+            print(json.dumps(product_analysis, indent=2))
             print("\n--- RULES FEEDBACK ---")
             print(json.dumps(rules_feedback, indent=2))
             print("\n--- END OF DEBUG INFORMATION ---")

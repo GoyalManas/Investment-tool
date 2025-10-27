@@ -43,9 +43,10 @@ This project is a Streamlit web application that generates a preliminary investm
 
 - **`app.py`:** The main Streamlit application file. It handles the user interface, orchestrates the API calls, and displays the final report.
 - **`api_calls.py`:** Contains the functions for making API calls to Perplexity AI and Groq.
+- **`prompts.py`:** Contains the prompts for the initial data gathering and high-level analysis.
+- **`new_prompts.py`:** Contains the more detailed, stage and sector-specific prompts for founder and product analysis.
 - **`rules.py`:** Defines the custom investment rules that are applied to the startup data.
-- **`pdf_generator.py`:** Includes the `PDFReport` class, which uses the `fpdf` library to generate the PDF report.
-- **`test_groq.py`:** A utility script for testing the connection to the Groq API.
+- **`pdf_generator.py`:** Includes the `PDFReport` class, which uses the `reportlab` library to generate the PDF report.
 - **`.env`:** Stores the API keys for Perplexity AI and Groq.
 
 ## Dependencies
@@ -56,7 +57,7 @@ This project uses the following Python libraries:
 - `python-dotenv`
 - `requests`
 - `groq`
-- `fpdf`
+- `reportlab`
 
 You can create a `requirements.txt` file with the following content:
 
@@ -65,7 +66,7 @@ streamlit
 python-dotenv
 requests
 groq
-fpdf
+reportlab
 ```
 
 ## Configuration

@@ -99,6 +99,29 @@
       "value": [1, 10],
       "result_if_true": { "type": "positive", "text": "Competition: The number of competitors ({value}) is reasonable." },
       "result_if_false": { "type": "neutral", "text": "Competition: The number of competitors is not specified or too high." }
+    },
+    {
+      "id": "FOUNDERS_01",
+      "description": "Delayed Preseed/Seed Stage",
+      "field_to_check": "foundedYear",
+      "operator": "le",
+      "value": 2020,
+      "condition": {
+        "field": "stage",
+        "operator": "contains_any",
+        "value": ["Preseed", "Seed"]
+      },
+      "result_if_true": { "type": "negative", "text": "Founder Alert: Founded in or before 2020 but still at Pre-seed/Seed stage. Needs justification for the delay." },
+      "result_if_false": { "type": "positive", "text": "Founder Timing: Company age is appropriate for its current stage." }
+    },
+    {
+      "id": "FOUNDERS_02",
+      "description": "Founder Shareholding",
+      "field_to_check": "aggregate_founder_shareholding",
+      "operator": "lt",
+      "value": 30,
+      "result_if_true": { "type": "negative", "text": "Founder Equity: Aggregate shareholding by founders is less than 30%, which may indicate less skin in the game." },
+      "result_if_false": { "type": "positive", "text": "Founder Equity: Founders hold a significant equity stake in the company." }
     }
   ]
 }

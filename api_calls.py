@@ -15,40 +15,66 @@ from prompts import (
     INVESTMENT_THESIS_SYSTEM_PROMPT,
     INVESTMENT_THESIS_USER_PROMPT_TEMPLATE
 )
+from new_prompts import (
+    FOUNDERS_ANALYSIS_SYSTEM_PROMPT,
+    FOUNDERS_PRESEED_SEED_PROMPT,
+    FOUNDERS_EARLY_STAGE_PROMPT,
+    FOUNDERS_GROWTH_STAGE_PROMPT,
+    FOUNDERS_LATER_STAGE_PROMPT,
+    FOUNDERS_FINTECH_PROMPT,
+    FOUNDERS_HEALTHTECH_PROMPT,
+    PRODUCT_ANALYSIS_SYSTEM_PROMPT,
+    PRODUCT_PRESEED_SEED_PROMPT,
+    PRODUCT_EARLY_STAGE_PROMPT,
+    PRODUCT_GROWTH_STAGE_PROMPT,
+    PRODUCT_LATER_STAGE_PROMPT,
+    PRODUCT_FINTECH_PROMPT,
+    PRODUCT_HEALTHTECH_PROMPT
+)
 import concurrent.futures
 
 def _extract_json_from_response(raw_content):
-    """Extracts a JSON object from a raw string response with improved robustness."""
+    """Extracts and merges all JSON objects from a raw string response."""
+    print(f"--- RAW CONTENT ---\n{raw_content}\n--- END RAW CONTENT ---")
     
-    # 1. Try to find JSON within ```json ... ```
-    match = re.search(r'```json\s*(\{.*\})\s*```', raw_content, re.DOTALL)
-    if match:
+    merged_json = {}
+    
+    # First, try to find JSON within ```json ... ``` blocks
+    json_blocks = re.findall(r'```json\s*(\{.*?\})\s*```', raw_content, re.DOTALL)
+    for block in json_blocks:
         try:
-            return json.loads(match.group(1))
-        except json.JSONDecodeError:
-            pass  # Fall through to the next method
+            merged_json.update(json.loads(block))
+        except json.JSONDecodeError as e:
+            print(f"!!! JSONDecodeError in json block: {e}")
 
-    # 2. Use a more robust regex to find a JSON object
-    match = re.search(r'\{(?:[^\{}|\{[^\{}*\})*\}', raw_content)
-    if match:
-        try:
-            return json.loads(match.group(0))
-        except json.JSONDecodeError:
-            pass # Fall through to the next method
+    # Then, process the rest of the content
+    content_without_blocks = re.sub(r'```json\s*(\{.*?\})\s*```', '', raw_content, flags=re.DOTALL)
+    
+    # Find all top-level JSON objects in the remaining content
+    brace_level = 0
+    start_index = -1
+    
+    for i, char in enumerate(content_without_blocks):
+        if char == '{':
+            if brace_level == 0:
+                start_index = i
+            brace_level += 1
+        elif char == '}':
+            if brace_level > 0:
+                brace_level -= 1
+                if brace_level == 0 and start_index != -1:
+                    json_str = content_without_blocks[start_index:i+1]
+                    try:
+                        merged_json.update(json.loads(json_str))
+                        start_index = -1
+                    except json.JSONDecodeError as e:
+                        print(f"!!! JSONDecodeError parsing object: {e}")
 
-    # 3. Try to find the first '{' and the last '}'
-    try:
-        start = raw_content.find('{')
-        end = raw_content.rfind('}')
-        if start != -1 and end != -1:
-            return json.loads(raw_content[start:end+1])
-    except json.JSONDecodeError:
-        pass # Fall through to the error
+    if not merged_json:
+        print(f"!!! FAILED TO EXTRACT JSON. Raw response was:\n{raw_content}")
+        return {"error": "Could not find a valid JSON object in the model's response."}
 
-    # 4. If all else fails, return an error
-    print(f"!!! FAILED TO EXTRACT JSON. Raw response was:\n{raw_content}")
-    return {"error": "Could not find a valid JSON object in the model's response."}
-
+    return merged_json
 
 def _make_perplexity_request(prompt_template, startup_name, sector):
     """Makes a single request to the Perplexity API."""
@@ -155,3 +181,125 @@ def generate_investment_thesis(company_data, llm_analysis):
         return _extract_json_from_response(raw_content)
     except Exception as e:
         return {"error": f"LLM generation failed for thesis with an unexpected error: {e}"}
+
+def get_stage_prompt(stage_str, prompt_map):
+    if not isinstance(stage_str, str):
+        return None
+    stage_str = stage_str.lower()
+    if "preseed" in stage_str or "seed" in stage_str:
+        return prompt_map["preseed_seed"]
+    elif "early" in stage_str or "series a" in stage_str:
+        return prompt_map["early_stage"]
+    elif "growth" in stage_str or "series b" in stage_str:
+        return prompt_map["growth_stage"]
+    elif "later" in stage_str or "series c" in stage_str or "series d" in stage_str:
+        return prompt_map["later_stage"]
+    return None
+
+def get_sector_prompt(sector_str, prompt_map):
+    if not isinstance(sector_str, str):
+        return None
+    sector_str = sector_str.lower()
+    if "fintech" in sector_str:
+        return prompt_map["fintech"]
+    elif "healthtech" in sector_str:
+        return prompt_map["healthtech"]
+    return None
+
+@st.cache_data
+def generate_founders_analysis(company_data):
+    api_key = os.getenv("GROQ_API_KEY")
+    client = Groq(api_key=api_key)
+    
+    stage = company_data.get("stage", "N/A")
+    sector = company_data.get("category", {}).get("sector", "N/A")
+    
+    stage_prompt_map = {
+        "preseed_seed": FOUNDERS_PRESEED_SEED_PROMPT,
+        "early_stage": FOUNDERS_EARLY_STAGE_PROMPT,
+        "growth_stage": FOUNDERS_GROWTH_STAGE_PROMPT,
+        "later_stage": FOUNDERS_LATER_STAGE_PROMPT
+    }
+    
+    sector_prompt_map = {
+        "fintech": FOUNDERS_FINTECH_PROMPT,
+        "healthtech": FOUNDERS_HEALTHTECH_PROMPT
+    }
+    
+    stage_prompt = get_stage_prompt(stage, stage_prompt_map)
+    sector_prompt = get_sector_prompt(sector, sector_prompt_map)
+    
+    if not stage_prompt and not sector_prompt:
+        return {"error": "Could not determine stage or sector for founders analysis."}
+        
+    prompt_context = f"Company Name: {company_data.get('name', 'N/A')}\nDescription: {company_data.get('description', 'N/A')}\nSector: {company_data.get('category', {}).get('sector', 'N/A')}\nStage: {stage}"
+    
+    user_prompt_parts = []
+    if stage_prompt:
+        user_prompt_parts.append(stage_prompt)
+    if sector_prompt:
+        user_prompt_parts.append(sector_prompt)
+    
+    user_prompt = "\n".join(user_prompt_parts)
+        
+    user_prompt = user_prompt.format(prompt_context=prompt_context)
+
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": FOUNDERS_ANALYSIS_SYSTEM_PROMPT}, {"role": "user", "content": user_prompt}],
+            temperature=0.7,
+        )
+        raw_content = response.choices[0].message.content
+        return _extract_json_from_response(raw_content)
+    except Exception as e:
+        return {"error": f"LLM generation failed for founders analysis with an unexpected error: {e}"}
+
+@st.cache_data
+def generate_product_analysis(company_data):
+    api_key = os.getenv("GROQ_API_KEY")
+    client = Groq(api_key=api_key)
+    
+    stage = company_data.get("stage", "N/A")
+    sector = company_data.get("category", {}).get("sector", "N/A")
+    
+    stage_prompt_map = {
+        "preseed_seed": PRODUCT_PRESEED_SEED_PROMPT,
+        "early_stage": PRODUCT_EARLY_STAGE_PROMPT,
+        "growth_stage": PRODUCT_GROWTH_STAGE_PROMPT,
+        "later_stage": PRODUCT_LATER_STAGE_PROMPT
+    }
+    
+    sector_prompt_map = {
+        "fintech": PRODUCT_FINTECH_PROMPT,
+        "healthtech": PRODUCT_HEALTHTECH_PROMPT
+    }
+    
+    stage_prompt = get_stage_prompt(stage, stage_prompt_map)
+    sector_prompt = get_sector_prompt(sector, sector_prompt_map)
+    
+    if not stage_prompt and not sector_prompt:
+        return {"error": "Could not determine stage or sector for product analysis."}
+        
+    prompt_context = f"Company Name: {company_data.get('name', 'N/A')}\nDescription: {company_data.get('description', 'N/A')}\nSector: {company_data.get('category', {}).get('sector', 'N/A')}\nStage: {stage}"
+    
+    user_prompt_parts = []
+    if stage_prompt:
+        user_prompt_parts.append(stage_prompt)
+    if sector_prompt:
+        user_prompt_parts.append(sector_prompt)
+    
+    user_prompt = "\n".join(user_prompt_parts)
+        
+    user_prompt = user_prompt.format(prompt_context=prompt_context)
+
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": PRODUCT_ANALYSIS_SYSTEM_PROMPT}, {"role": "user", "content": user_prompt}],
+            temperature=0.7,
+        )
+        raw_content = response.choices[0].message.content
+        return _extract_json_from_response(raw_content)
+    except Exception as e:
+        return {"error": f"LLM generation failed for product analysis with an unexpected error: {e}"}
